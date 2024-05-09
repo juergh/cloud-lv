@@ -83,7 +83,7 @@ function copy_rootfs()
 
 	# Get the start sector and sector count of the root partition
 	start_count=$(sfdisk -l -o Start,Sectors,Type "${IMAGE}" | \
-					  awk '/ Linux/ { print $1 " " $2 }') 
+	              awk '/ Linux filesystem/ { print $1 " " $2 }')
 	start=${start_count% *}
 	count=${start_count#* }
 

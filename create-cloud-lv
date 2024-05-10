@@ -89,8 +89,48 @@ function copy_rootfs()
 
 	pr_info "Copy root filesystem to ${LV_DEVICE}"
 	dd ibs=512 skip="${start}" count="${count}" if="${IMAGE}" of="${LV_DEVICE}"
+}
 
-	pr_info "Set label on ${LV_DEVICE}"
+function copy_image()
+{
+	pr_info "Copy image to ${LV_DEVICE}"
+	dd bs=10M if="${IMAGE}" of="${LV_DEVICE}"
+}
+
+function relabel_filesystems()
+{
+	local part label fstype
+
+	pr_info "Re-label filesystems on ${LV_DEVICE}"
+	partprobe "${LV_DEVICE}"
+
+	for part in "${LV_DEVICE}"* ; do
+		if  [ "${part}" = "${LV_DEVICE}" ] ; then
+			continue
+		fi
+
+		read -r label fstype < <(lsblk -n -f -o LABEL,FSTYPE "${part}")
+
+		if [ -z "${label}" ] ; then
+			# No label found
+			continue
+		fi
+
+		# Reset label
+		label=${label%-"${RELEASE}"}
+
+		# Re-label
+		case "${fstype}" in
+			"")   continue ;;
+			ext4) cmd=e2label ;;
+			vfat) cmd=vfatlabel ;;
+			*)
+				pr_error "Unsupported label type: ${fstype}"
+				exit 1
+				;;
+		esac
+		"${cmd}" "${part}" "${label}-${RELEASE}"
+	done
 }
 
 function resize_rootfs()

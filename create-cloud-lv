@@ -342,6 +342,7 @@ function install_packages()
 		linux-virtual
 		linux-image-virtual
 		linux-headers-virtual
+		needrestart
 		unattended-upgrades
 	)
 	for pkg in "${pkgs[@]}" ; do

@@ -1,0 +1,11 @@
+#!/bin/bash -eu
+#
+# Copy an image to an LV
+#
+
+. "$(dirname "$(readlink -f "${0}")")"/../functions
+
+pr_info "Copy image to ${LV_DEVICE}"
+dd bs=10M if="${IMAGE}" of="${LV_DEVICE}" conv=sync status=progress
+
+partprobe -s "${LV_DEVICE}"

@@ -1,0 +1,31 @@
+#!/bin/bash -eu
+#
+# Helper functions
+#
+
+CACHE_DIR=${HOME}/.cache/images
+mkdir -p "${CACHE_DIR}"
+
+function out()
+{
+	local rc=$?
+
+	trap - EXIT INT TERM HUP
+
+	if [ "${rc}" -ne 0 ] ; then
+		pr_error "Error: Script failed"
+	fi
+
+	exit "${rc}"
+}
+
+function pr_error()
+{
+	echo -e "\e[31m${*}\e[0m" >&2
+
+}
+
+function pr_info()
+{
+	echo -e "\e[33m${*}\e[0m"
+}

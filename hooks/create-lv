@@ -1,0 +1,18 @@
+#!/bin/bash -eu
+#
+# Create an LV
+#
+
+. "$(dirname "$(readlink -f "${0}")")"/../functions
+
+if [ -e "${LV_DEVICE}" ] ; then
+	if [ "${FORCE}" -eq 0 ] ; then
+		pr_error "Error: LV ${LV_DEVICE} exists already. Use --force to recreate it."
+		exit 1
+	fi
+	pr_info "Remove ${LV_DEVICE}"
+	lvremove -f "${LV_DEVICE}"
+fi
+
+pr_info "Create ${LV_DEVICE}"
+lvcreate --yes --name "${LV_NAME}" --size 20G "${VG_NAME}"

@@ -1,0 +1,32 @@
+#!/bin/bash -eu
+#
+# Download and convert a cloud image
+#
+
+. "$(dirname "$(readlink -f "${0}")")"/../functions
+
+
+suffix=
+case "${RELEASE}" in
+	precise|trusty|xenial)
+		suffix=-disk1
+		;;
+esac
+
+image_name=${RELEASE}-server-cloudimg-${ARCH}${suffix}.img
+url=https://cloud-images.ubuntu.com/${RELEASE}/current/${image_name}
+
+image=${CACHE_DIR}/${image_name}
+IMAGE=${image}.raw
+
+if [ -e "${IMAGE}" ] ; then
+	exit 0
+fi
+
+pr_info "Download cloud image ${image_name}"
+wget -O "${image}" "${url}"
+
+pr_info "Convert image to raw"
+qemu-img convert -O raw "${image}" "${IMAGE}"
+
+rm -f "${image}"

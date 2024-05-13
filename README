@@ -16,6 +16,6 @@ vg0-<release>
 # Create a new cloud LV:
 1) Boot into then management OS
 2) Run the following commands (as root):
-   $ cp 15_create-cloud-lv /etc/default/grub.d/
+   $ cp grub.d/15_create-cloud-lv /etc/grub.d/
    $ create-cloud-lv <release>
    $ update-grub

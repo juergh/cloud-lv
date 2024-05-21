@@ -11,6 +11,7 @@ if [ -e "${LV_DEVICE}" ] ; then
 		exit 1
 	fi
 	pr_info "Remove ${LV_DEVICE}"
+	kpartx -d "${LV_DEVICE}"
 	lvremove -f "${LV_DEVICE}"
 fi
 

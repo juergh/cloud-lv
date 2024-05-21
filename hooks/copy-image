@@ -8,4 +8,5 @@
 pr_info "Copy image to ${LV_DEVICE}"
 dd bs=10M if="${IMAGE}" of="${LV_DEVICE}" conv=sync status=progress
 
+pr_info "Probe partitions of ${LV_DEVICE}"
 partprobe -s "${LV_DEVICE}"

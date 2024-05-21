@@ -3,8 +3,9 @@
 # Helper functions
 #
 
-CACHE_DIR=${HOME}/.cache/images
-mkdir -p "${CACHE_DIR}"
+if [ -e "${VARS:-}" ] ; then
+	. "${VARS}"
+fi
 
 function out()
 {

@@ -18,6 +18,7 @@ url=https://cloud-images.ubuntu.com/${RELEASE}/current/${image_name}
 
 image=${CACHE_DIR}/${image_name}
 IMAGE=${image}.raw
+echo "IMAGE=${IMAGE}" >>"${VARS}"
 
 if [ -e "${IMAGE}" ] ; then
 	exit 0

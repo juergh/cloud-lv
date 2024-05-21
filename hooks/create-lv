@@ -7,7 +7,7 @@
 
 if [ -e "${LV_DEVICE}" ] ; then
 	if [ "${FORCE}" -eq 0 ] ; then
-		pr_error "Error: LV ${LV_DEVICE} exists already. Use --force to recreate it."
+		pr_error "LV ${LV_DEVICE} exists already. Use --force to recreate it."
 		exit 1
 	fi
 	pr_info "Remove ${LV_DEVICE}"

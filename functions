@@ -14,7 +14,7 @@ function out()
 	trap - EXIT INT TERM HUP
 
 	if [ "${rc}" -ne 0 ] ; then
-		pr_error "Error: Script failed"
+		pr_error "Script failed"
 	fi
 
 	exit "${rc}"
@@ -22,7 +22,7 @@ function out()
 
 function pr_error()
 {
-	echo -e "\e[31m${*}\e[0m" >&2
+	echo -e "\e[31mError: ${*}\e[0m" >&2
 
 }
 

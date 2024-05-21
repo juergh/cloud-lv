@@ -1,0 +1,20 @@
+#!/bin/bash -eu
+#
+# Grow the last partition on an LV
+#
+
+. "$(dirname "$(readlink -f "${0}")")"/../functions
+
+partnum=$(sfdisk -q -l -o Start,Device "${LV_DEVICE}" | sort -n | tail -1 | grep -o '[0-9]*$')
+
+pr_info "Grow last partition (${partnum}) of ${LV_DEVICE}"
+kpartx -d "${LV_DEVICE}"
+sfdisk --no-tell-kernel --relocate gpt-bak-std "${LV_DEVICE}"
+echo ",+" | sfdisk --no-tell-kernel -N "${partnum}" "${LV_DEVICE}"
+
+pr_info "Probe partitions of ${LV_DEVICE}"
+partprobe -s "${LV_DEVICE}"
+
+pr_info "Resize filesystem on last partition of ${LV_DEVICE}"
+e2fsck -f -y "${LV_DEVICE}${partnum}"
+resize2fs -f "${LV_DEVICE}${partnum}"

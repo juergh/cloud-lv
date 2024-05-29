@@ -13,6 +13,3 @@ fi
 
 pr_info "Blacklist modules"
 cp "${files[@]}" "${MOUNT_POINT}"/etc/modprobe.d/
-
-pr_info "Update initramfs"
-chroot "${MOUNT_POINT}" update-initramfs -k all -u

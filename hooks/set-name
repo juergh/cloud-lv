@@ -3,6 +3,7 @@
 # Set the name of the installation
 #
 
+# shellcheck disable=SC1091
 . "$(dirname "$(readlink -f "${0}")")"/../functions
 
 echo "${SERIES}" > "${MOUNTP}"/etc/debian_chroot

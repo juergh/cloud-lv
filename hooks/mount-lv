@@ -1,0 +1,32 @@
+#!/bin/bash -eu
+#
+# Mount the LV partitions
+#
+
+# shellcheck disable=SC1091
+. "$(dirname "$(readlink -f "${0}")")"/../functions
+
+MOUNT_POINT=$(mktemp -d)
+echo "MOUNT_POINT=${MOUNT_POINT}" >>"${VARS}"
+
+root_dev=/dev/disk/by-label/${RELEASE}-root
+
+pr_info "Mount device ${root_dev} to ${MOUNT_POINT}"
+mount "${root_dev}" "${MOUNT_POINT}"
+
+# Fix fstab
+if grep cloudimg-rootfs "${MOUNT_POINT}"/etc/fstab ; then
+	sed -i \
+		-e "s/LABEL=cloudimg-rootfs/LABEL=${RELEASE}-root/" \
+		-e "s/LABEL=BOOT/LABEL=${RELEASE^^}-BOOT/" \
+		-e "s/LABEL=UEFI/LABEL=${RELEASE^^}-UEFI/" \
+		"${MOUNT_POINT}"/etc/fstab
+fi
+
+pr_info "Bind mount /dev /proc /sys"
+for d in /dev /proc /sys ; do
+	mount -o bind "${d}" "${MOUNT_POINT}${d}"
+done
+
+pr_info "Mount all partitions"
+chroot "${MOUNT_POINT}" mount -a

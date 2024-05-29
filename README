@@ -1,4 +1,4 @@
-A simple script for creating a new LV from an Ubuntu cloud image
+A simple script for creating an LV from an Ubuntu cloud image
 
 Before you can use this, a management OS must be installed.
 
@@ -16,6 +16,6 @@ vg0-<release>
 # Create a new cloud LV:
 1) Boot into then management OS
 2) Run the following commands (as root):
-   $ cp grub.d/15_create-cloud-lv /etc/grub.d/
-   $ create-cloud-lv <release>
+   $ cp grub.d/15_cloud-lv /etc/grub.d/
+   $ cloud-lv create <release>
    $ update-grub

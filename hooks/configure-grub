@@ -20,10 +20,10 @@ EOF
 chmod 755 "${MOUNT_POINT}"/usr/local/sbin/update-grub
 mkdir -p "${MOUNT_POINT}"/mnt/boot
 
-pr_info "Create etc/default/grub.d/99-create-cloud-lv.cfg" 
+pr_info "Create etc/default/grub.d/99-cloud-lv.cfg"
 
 mkdir -p "${MOUNT_POINT}"/etc/default/grub.d
-cat <<EOF >"${MOUNT_POINT}"/etc/default/grub.d/99-create-cloud-lv.cfg
+cat <<EOF >"${MOUNT_POINT}"/etc/default/grub.d/99-cloud-lv.cfg
 unset GRUB_HIDDEN_TIMEOUT GRUB_TIMEOUT_STYLE GRUB_FORCE_PARTUUID
 GRUB_TIMEOUT=10
 GRUB_CMDLINE_LINUX_DEFAULT="earlyprintk=ttyS0,115200 console=ttyS0,115200 console=tty0 loglevel=7 i915.modeset=0"

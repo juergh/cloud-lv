@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# /etc/grub.d/15_create-cloud-lv
+# /etc/grub.d/15_cloud-lv
 #
 
 for c in /boot/grub/grub-*.cfg ; do

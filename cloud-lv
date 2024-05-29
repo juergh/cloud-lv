@@ -1,0 +1,177 @@
+#!/bin/bash -eu
+
+HERE=$(dirname "$(readlink -f "${0}")")
+# shellcheck disable=SC1091
+. "${HERE}"/functions
+
+function out()
+{
+	local rc=${?}
+
+	trap - EXIT INT TERM HUP
+	set +e
+
+	if [ -n "${VARS:-}" ] ; then
+		# shellcheck disable=SC1090
+		. "${VARS}"
+		if [ -d "${MOUNT_POINT:-}" ] ; then
+			if [ -e "${MOUNT_POINT}"/etc/resolv.conf.orig ] ; then
+				mv "${MOUNT_POINT}"/etc/resolv.conf.orig "${MOUNT_POINT}"/etc/resolv.conf
+			fi
+			if mountpoint -q "${MOUNT_POINT}" ; then
+				pr_info "Unmount ${MOUNT_POINT}"
+				umount -R "${MOUNT_POINT}"
+			fi
+			rmdir "${MOUNT_POINT}"
+		fi
+		rm -f "${VARS}"
+	fi
+
+	if [ ${rc} -ne 0 ] ; then
+		pr_error "Script failed"
+	fi
+
+	exit "${rc}"
+}
+
+function run_hook()
+{
+	"${HERE}"/hooks/"${1}"
+}
+
+function usage()
+{
+	cat <<EOF
+Usage: cloud-lv create|enter <release>
+
+create         Create a new LV from a cloud image
+enter          Enter an existing LV
+release        Ubuntu release (noble, ...)
+
+Optional arguments:
+  -f, --force  Recreate an existing LV.
+  -h, --help   Show this help test and exit.
+EOF
+}
+
+ARCH=amd64
+FORCE=0
+RELEASE=
+
+action=
+
+while [ ${#} -gt 0 ] ; do
+	case "${1}" in
+		-f|--force)
+			FORCE=1
+			;;
+		-h|--help)
+			usage
+			exit
+			;;
+		create|enter)
+			action=${1}
+			;;
+		*)
+			if [ -n "${RELEASE}" ] ; then
+				pr_error "Invalid argument: ${1}"
+				exit 2
+			fi
+			RELEASE=${1}
+			;;
+	esac
+	shift
+done
+
+if [ -z "${action}" ] || [ -z "${RELEASE}" ] ; then
+	usage
+	exit 2
+fi
+
+if [ "$(id -u)" != "0" ] ; then
+	pr_error "This script needs to be run as root"
+	exit 2
+fi
+
+# Globals
+VG_NAME=vg0
+
+LV_NAME=${RELEASE}
+if [ "${ARCH}" != "$(dpkg --print-architecture)" ] ; then
+	LV_NAME=${LV_NAME}_${ARCH}
+fi
+LV_DEVICE=/dev/mapper/${VG_NAME}-${LV_NAME}
+LV_HOME=/dev/mapper/${VG_NAME}-home
+LV_SWAP=/dev/mapper/${VG_NAME}-swap
+LV_BOOT=/dev/mapper/${VG_NAME}-boot
+CONFIG_DIR=${HERE}/config/$(hostname)/${RELEASE}
+
+# Check if the vg exists
+if ! vgdisplay "${VG_NAME}" >/dev/null 2>&1 ; then
+	pr_error "No such volume group: ${VG_NAME}"
+	exit 1
+fi
+
+trap out EXIT INT TERM HUP
+
+# Cache directory
+CACHE_DIR=${HOME}/.cache/images
+mkdir -p "${CACHE_DIR}"
+
+# Create the temporary variables file
+export VARS=/tmp/vars.$$
+cat <<EOF >"${VARS}"
+ARCH=${ARCH}
+CACHE_DIR=${CACHE_DIR}
+CONFIG_DIR=${CONFIG_DIR}
+FORCE=${FORCE}
+LV_BOOT=${LV_BOOT}
+LV_DEVICE=${LV_DEVICE}
+LV_HOME=${LV_HOME}
+LV_NAME=${LV_NAME}
+LV_SWAP=${LV_SWAP}
+RELEASE=${RELEASE}
+VG_NAME=${VG_NAME}
+EOF
+
+case "${action}" in
+	create)
+		# Download the cloud image
+		run_hook download-image
+
+		# Create the LV
+		run_hook create-lv
+		run_hook copy-image
+		run_hook grow-partition
+		run_hook relabel-filesystems
+
+		# Configure the LV
+		run_hook set-name
+		run_hook update-fstab
+		run_hook fix-resolv-conf
+		run_hook blacklist-modules
+		run_hook configure-grub
+		run_hook add-initramfs-partprobe
+		run_hook configure-cloud-init
+		run_hook add-user-group
+		run_hook add-apt-repos
+		run_hook install-packages
+
+		# Should come last
+		run_hook update-initramfs
+		;;
+
+	enter)
+		# Mount the LV
+		run_hook mount-lv
+
+		# shellcheck disable=SC1090
+		. "${VARS}"
+		chroot "${MOUNT_POINT}"
+		;;
+
+	*)
+		usage
+		exit 2
+		;;
+esac

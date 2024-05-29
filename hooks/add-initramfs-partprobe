@@ -1,0 +1,38 @@
+#!/bin/bash -eu
+#
+# Add partprobe initramfs hooks
+#
+
+# shellcheck disable=SC1091
+. "$(dirname "$(readlink -f "${0}")")"/../functions
+
+pr_info "Add partprobe initramfs hooks"
+
+hook=${MOUNT_POINT}/etc/initramfs-tools/hooks/partprobe
+cat <<EOF >"${hook}"
+#!/bin/sh
+case \$1 in
+prereqs)
+    exit 0
+    ;;
+esac
+. /usr/share/initramfs-tools/hook-functions
+
+copy_exec /sbin/partprobe
+EOF
+chmod 755 "${hook}"
+
+hook=${MOUNT_POINT}/etc/initramfs-tools/scripts/local-top/partprobe
+cat <<EOF >"${hook}"
+#!/bin/sh
+case \$1 in
+prereqs)
+    exit 0
+    ;;
+esac
+. /scripts/functions
+
+vgchange -ay
+partprobe -s ${LV_DEVICE}
+EOF
+chmod 755 "${hook}"

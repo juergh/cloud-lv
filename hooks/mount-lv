@@ -6,10 +6,11 @@
 # shellcheck disable=SC1091
 . "$(dirname "$(readlink -f "${0}")")"/../functions
 
-MOUNT_POINT=$(mktemp -d)
-echo "MOUNT_POINT=${MOUNT_POINT}" >>"${VARS}"
-
 root_dev=/dev/disk/by-label/${RELEASE}-root
+
+MOUNT_POINT=/tmp/${RELEASE}.$$
+mkdir -p "${MOUNT_POINT}"
+echo "MOUNT_POINT=${MOUNT_POINT}" >>"${VARS}"
 
 pr_info "Mount device ${root_dev} to ${MOUNT_POINT}"
 

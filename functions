@@ -4,6 +4,7 @@
 #
 
 if [ -e "${VARS:-}" ] ; then
+	# shellcheck disable=SC1090
 	. "${VARS}"
 fi
 
@@ -29,4 +30,24 @@ function pr_error()
 function pr_info()
 {
 	echo -e "\e[33m${*}\e[0m"
+}
+
+function partprobe_wait()
+{
+	local dev=${1} part=${2}
+	local count
+
+	partprobe -s "${dev}"
+
+	count=0
+	while [ ${count} -lt 10 ] ; do
+		if [ -e "${part}" ] ; then
+			return
+		fi
+		sleep .2
+		count=$((count + 1))
+	done
+
+	pr_error "Timed out waiting for ${part}"
+	return 1
 }

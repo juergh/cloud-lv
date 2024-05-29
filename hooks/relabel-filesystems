@@ -7,7 +7,7 @@
 . "$(dirname "$(readlink -f "${0}")")"/../functions
 
 pr_info "Relabel filesystems on ${LV_DEVICE}"
-partprobe "${LV_DEVICE}"
+partprobe -s "${LV_DEVICE}"
 
 for part in "${LV_DEVICE}"* ; do
 	if [ "${part}" = "${LV_DEVICE}" ] ; then
@@ -47,5 +47,3 @@ for part in "${LV_DEVICE}"* ; do
 	esac
 	"${cmd}" "${part}" "${new_label}"
 done
-
-partprobe "${LV_DEVICE}"

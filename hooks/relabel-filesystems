@@ -3,9 +3,10 @@
 # Relabel the filesystems on an LV
 #
 
+# shellcheck disable=SC1091
 . "$(dirname "$(readlink -f "${0}")")"/../functions
 
-pr_info "Re-label filesystems on ${LV_DEVICE}"
+pr_info "Relabel filesystems on ${LV_DEVICE}"
 partprobe "${LV_DEVICE}"
 
 for part in "${LV_DEVICE}"* ; do
@@ -20,21 +21,31 @@ for part in "${LV_DEVICE}"* ; do
 		continue
 	fi
 
-	# Reset label
-	label=${label%-"${RELEASE}"}
-
-	# Re-label
-	case "${fstype}" in
-		ext4)
-			cmd=e2label
-			;;
-		vfat)
-			cmd=fatlabel
+	new_label=
+	case "${label}" in
+		cloudimg-rootfs) new_label=${RELEASE}-root ;;
+		UEFI)            new_label=${RELEASE^^}-UEFI ;;
+		BOOT)            new_label=${RELEASE^^}-BOOT ;;
+		"${RELEASE}"-*|"${RELEASE^^}"-*)
+			# Already relabeled
+			continue
 			;;
 		*)
-			pr_error "Unsupported label type: ${fstype}"
+			pr_error "Unsupported label name: ${label}"
 			exit 1
 			;;
 	esac
-	"${cmd}" "${part}" "${label}-${RELEASE}"
+
+	# Relabel
+	case "${fstype}" in
+		ext4) cmd=e2label ;;
+		vfat) cmd=fatlabel ;;
+		*)
+			pr_error "Unsupported filesystem type: ${fstype}"
+			exit 1
+			;;
+	esac
+	"${cmd}" "${part}" "${new_label}"
 done
+
+partprobe "${LV_DEVICE}"

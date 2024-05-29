@@ -1,0 +1,50 @@
+#!/bin/bash -eu
+#
+# Install additional packages
+#
+
+# shellcheck disable=SC1091
+. "$(dirname "$(readlink -f "${0}")")"/../functions
+
+chroot "${MOUNT_POINT}" apt-get update
+
+pr_info "Remove unwanted packages"
+
+# Purge unwanted packages
+pkgs=(
+	linux-virtual
+	linux-image-virtual
+	linux-headers-virtual
+	needrestart
+	unattended-upgrades
+)
+for pkg in "${pkgs[@]}" ; do
+	chroot "${MOUNT_POINT}" apt-get purge --yes "${pkg}" || true
+done
+chroot "${MOUNT_POINT}" apt-get autoremove --yes --purge
+
+pr_info "Install additional packages"
+
+# Install wanted packages
+pkgs=(
+	linux-image-generic
+	linux-headers-generic
+	lvm2
+	dkms)
+chroot "${MOUNT_POINT}" apt-get install --yes "${pkgs[@]}"
+
+# Install linux-modules-extra-*-generic
+readarray -t initrds < <(ls -1 "${MOUNT_POINT}"/boot/initrd.img-*-generic)
+for initrd in "${initrds[@]}" ; do
+	pkg="linux-modules-extra-${initrd#*/initrd.img-}"
+	chroot "${MOUNT_POINT}" apt-get install --yes "${pkg}" || true
+done
+
+# Install local packages
+readarray -t debs < <(find "${CONFIG_DIR}"/ -type f -name '*.deb')
+if [ "${#debs[@]}" -gt 0 ] ; then
+	pr_info "Install local packages"
+	rm -rf "${MOUNT_POINT}"/var/tmp/*.deb
+	cp "${debs[@]}" "${MOUNT_POINT}"/var/tmp/
+	chroot "${MOUNT_POINT}" bash -c 'dpkg -i /var/tmp/*.deb'
+fi

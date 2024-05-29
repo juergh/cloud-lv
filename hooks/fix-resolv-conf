@@ -1,0 +1,18 @@
+#!/bin/bash -eu
+#
+# Temporarily fix /etc/resolv.conf
+#
+
+# shellcheck disable=SC1091
+. "$(dirname "$(readlink -f "${0}")")"/../functions
+
+pr_info "Fix etc/resolv.conf temporarily"
+
+ip=$(ip route get 1.0.0.0)
+ip=${ip#* via }
+ip=${ip%% *}
+
+mv "${MOUNT_POINT}"/etc/resolv.conf "${MOUNT_POINT}"/etc/resolv.conf.orig
+cat <<EOF > "${MOUNT_POINT}"/etc/resolv.conf
+nameserver ${ip}
+EOF

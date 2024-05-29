@@ -1,0 +1,18 @@
+#!/bin/bash -eu
+#
+# Blacklist kernel modules
+#
+
+# shellcheck disable=SC1091
+. "$(dirname "$(readlink -f "${0}")")"/../functions
+
+readarray -t files < <(find "${CONFIG_DIR}"/ -name 'blacklist-*.conf')
+if [ "${#files[@]}" -eq 0 ] ; then
+	exit
+fi
+
+pr_info "Blacklist modules"
+cp "${files[@]}" "${MOUNT_POINT}"/etc/modprobe.d/
+
+pr_info "Update initramfs"
+chroot "${MOUNT_POINT}" update-initramfs -k all -u

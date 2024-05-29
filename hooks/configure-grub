@@ -1,0 +1,37 @@
+#!/bin/bash -eu
+#
+# Configure GRUB
+#
+
+# shellcheck disable=SC1091
+. "$(dirname "$(readlink -f "${0}")")"/../functions
+
+pr_info "Create usr/local/sbin/update-grub"
+
+cat <<EOF >"${MOUNT_POINT}"/usr/local/sbin/update-grub
+#!/bin/bash
+/usr/sbin/update-grub "\${@}"
+echo "Copy grub.cfg to ${LV_BOOT}"
+mount ${LV_BOOT} /mnt/boot/
+cp /boot/grub/grub.cfg /mnt/boot/grub/grub-${RELEASE}-${ARCH}.cfg
+umount /mnt/boot/ || umount -l /mnt/boot
+EOF
+
+chmod 755 "${MOUNT_POINT}"/usr/local/sbin/update-grub
+mkdir -p "${MOUNT_POINT}"/mnt/boot
+
+pr_info "Create etc/default/grub.d/99-create-cloud-lv.cfg" 
+
+mkdir -p "${MOUNT_POINT}"/etc/default/grub.d
+cat <<EOF >"${MOUNT_POINT}"/etc/default/grub.d/99-create-cloud-lv.cfg
+unset GRUB_HIDDEN_TIMEOUT GRUB_TIMEOUT_STYLE GRUB_FORCE_PARTUUID
+GRUB_TIMEOUT=10
+GRUB_CMDLINE_LINUX_DEFAULT="earlyprintk=ttyS0,115200 console=ttyS0,115200 console=tty0 loglevel=7 i915.modeset=0"
+GRUB_TERMINAL="console serial"
+GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
+GRUB_DISTRIBUTOR="Ubuntu ${RELEASE^} ${ARCH}"
+GRUB_DISABLE_OS_PROBER=true
+EOF
+
+pr_info "Update grub"
+chroot "${MOUNT_POINT}" update-grub

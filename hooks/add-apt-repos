@@ -1,0 +1,22 @@
+#!/bin/bash -eu
+#
+# Add APT repositories
+#
+
+# shellcheck disable=SC1091
+. "$(dirname "$(readlink -f "${0}")")"/../functions
+
+readarray -t files < <(find "${CONFIG_DIR}"/ -type f -name '*.list')
+if [ "${#files[@]}" -eq 0 ] ; then
+	exit
+fi
+
+pr_info "Add APT repos"
+cp "${files[@]}" "${MOUNT_POINT}"/etc/apt/sources.list.d/
+
+# Download the PPA public keys
+readarray -t keyids < <(awk '/PPA public key/ { print $NF }' \
+							"${MOUNT_POINT}"/etc/apt/sources.list.d/*.list)
+for keyid in "${keyids[@]}" ; do
+	chroot "${MOUNT_POINT}" apt-key adv --keyserver keyserver.ubuntu.com --recv-key "${keyid}"
+done

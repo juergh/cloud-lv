@@ -1,0 +1,18 @@
+#!/bin/bash -eu
+#
+# Update /etc/fstab
+#
+
+# shellcheck disable=SC1091
+. "$(dirname "$(readlink -f "${0}")")"/../functions
+
+if grep -q "^${LV_HOME} " "${MOUNT_POINT}"/etc/fstab ; then
+	exit
+fi
+
+pr_info "Update etc/fstab"
+
+cat <<EOF >>"${MOUNT_POINT}"/etc/fstab
+${LV_HOME}   /home   ext4   defaults   0   2
+${LV_SWAP}   none    swap   sw         0   0
+EOF

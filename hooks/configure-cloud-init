@@ -1,0 +1,44 @@
+#!/bin/bash -eu
+#
+# Configure cloud-init
+#
+
+# shellcheck disable=SC1091
+. "$(dirname "$(readlink -f "${0}")")"/../functions
+
+seedd="${MOUNT_POINT}"/var/lib/cloud/seed/nocloud
+mkdir -p  "${seedd}"
+
+pr_info "Create var/${seedd#*/var/}/meta-data"
+
+cat <<EOF >"${seedd}"/meta-data
+instance-id: ubuntu-${RELEASE}-${ARCH}
+local-hostname: $(hostname | tr -d '\n')
+EOF
+
+pr_info "Create var/${seedd#*/var/}/user-data"
+
+# shellcheck disable=SC2002
+timezone=$(cat /etc/timezone | tr -d '\n')
+cat <<EOF >"${seedd}"/user-data
+#cloud-config
+locale: ${LANG:-en_US.UTF-8}
+timezone: ${timezone}
+password: ubuntu
+chpasswd: { expire: False }
+ssh_pwauth: True
+manage_etc_hosts: True
+EOF
+
+pr_info "Configure cloud-init datasource"
+
+rm -f "${MOUNT_POINT}"/etc/cloud/cloud.cfg.d/*dpkg.cfg
+chroot "${MOUNT_POINT}" bash -c "echo 'cloud-init cloud-init/datasources multiselect NoCloud' | debconf-set-selections ; dpkg-reconfigure -f noninteractive cloud-init"
+
+pr_info "Clean cloud-init"
+
+if [ "${RELEASE}" = "precise" ] || [ "${RELEASE}" = "trusty" ] ; then
+	rm -rf "${MOUNT_POINT}"/var/lib/cloud
+else
+	chroot "${MOUNT_POINT}" cloud-init clean
+fi
